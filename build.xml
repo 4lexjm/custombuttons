@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Custom Buttons"
+	 default="buildxpi"
+	 basedir=".">
+
+  <description>
+    Custom Buttons add-on build file
+  </description>
+  
+  <!-- set global properties for this build -->
+  <property file="build.properties"/>
+  <property name="xpidlpath" location="${geckosdkpath}\bin"/>
+  <property name="idlpath" location="${geckosdkpath}\idl"/>
+  
+  <property name="appname" value="custombuttons"/>
+  <property name="jarname" value="custombuttons"/>
+  <property name="xpiname" value="custombuttons"/>
+  <xmlproperty file="install.rdf" keepRoot="false"/>
+  
+  <property name="keep_jar" value="true"/>
+  
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <patternset id="xpipatternset">
+      <include name="chrome.manifest"/>
+      <include name="install.rdf"/>
+      <include name="changelog.txt"/>
+      <include name="license.txt"/>
+      <include name="defaults/**/*.*"/>
+      <include name="components/**/*.*"/>
+      <include name="modules/**/*.*"/>
+      <include name="chrome/icons/**/*.*"/>
+      <include name="chrome/button.js"/>
+      <exclude name="build.number"/>
+    </patternset>
+    <patternset id="excludespatternset">
+      <exclude name="**/Thumbs.db"/>
+      <exclude name="**/*.idl"/>
+      <exclude name="**/*.orig"/>
+      <exclude name="**/*.patch"/>
+      <exclude name="**/*.rej"/>
+      <exclude name="**/.*"/>
+    </patternset>
+    <buildnumber/>
+    <echo>Builds ${appname}-${Description.em:version}-${DSTAMP}</echo>
+    <echo>Build No. ${build.number}</echo>
+  </target>
+  
+  <target name="buildxpt" depends="init">
+    <fail unless="geckosdkpath">The path to gecko sdk (geckosdkpath property) not defined.
+    Define it in build.properties (don't forget about double back slashes)</fail>
+    <apply executable="xpidl.exe" dir="${xpidlpath}"
+	   resolveExecutable="true" dest="${basedir}/components"
+	   os="Windows"
+	   failonerror="true">
+      <arg value="-m"/>
+      <arg value="typelib"/>
+      <arg value="-I"/>
+      <arg value="${idlpath}"/>
+      <arg value="-e"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${basedir}/components" includes="*.idl"/>
+      <mapper type="glob" from="*.idl" to="*.xpt"/>
+    </apply>
+    <apply executable="xpidl" dir="${xpidlpath}"
+	   resolveExecutable="true" dest="${basedir}/components"
+	   os="Linux"
+	   failonerror="true">
+      <arg value="-m"/>
+      <arg value="typelib"/>
+      <arg value="-I"/>
+      <arg value="${idlpath}"/>
+      <arg value="-e"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${basedir}/components" includes="*.idl"/>
+      <mapper type="glob" from="*.idl" to="*.xpt"/>
+    </apply>
+  </target>
+  
+  <target name="buildjar" depends="init">
+    <zip destfile="${basedir}/chrome/${jarname}.jar"
+	 compress="false" level="0">
+      <fileset id="jarfileset" dir="${basedir}/chrome/${jarname}">
+	<include name="**/*.*"/>
+	<patternset refid="excludespatternset"/>
+	<!-- common excludes -->
+	<exclude name="skin/classic/button1.png"/>
+	
+      </fileset>
+    </zip>
+  </target>
+  
+  <target name="buildxpiwithjar" depends="init,buildjar"
+	  if="keep_jar">
+    <zip destfile="${xpiname}.xpi"
+	 compress="true" level="9">
+      <fileset dir="${basedir}">
+	<patternset refid="xpipatternset"/>
+	<include name="chrome/${jarname}.jar"/>
+	<patternset refid="excludespatternset"/>
+      </fileset>
+    </zip>
+  </target>
+
+  <target name="noxpi" depends="buildxpiwithjar"
+	  description="Build add-on with no *.xpt compilation"/>
+  
+  <target name="buildxpi" depends="buildxpiwithjar,buildxpt"
+	  description="Build add-on"/>
+
+  <target name="release" depends="clean,init,buildjar"
+	  if="keep_jar"
+	  description="Make release build">
+    <zip destfile="${xpiname}-${Description.em:version}-${DSTAMP}.xpi"
+	 compress="true" level="9">
+      <fileset dir="${basedir}">
+	<patternset refid="xpipatternset"/>
+	<include name="chrome/${jarname}.jar"/>
+	<patternset refid="excludespatternset"/>
+      </fileset>
+    </zip>
+  </target>
+
+  <target name="clean" description="Remove *.jar and *.xpi files">
+    <delete>
+      <fileset dir="${basedir}">
+	<include name="**/*.xpi"/>
+	<include name="chrome/*.jar"/>
+      </fileset>
+    </delete>
+  </target>
+</project>
+
